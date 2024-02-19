@@ -1,6 +1,10 @@
+# frozen_string_literal: true
+
+# Gameクラスはゲームの全体の処理に関する内容
 class Game
   attr_reader :pool_cards, :compare_cards, :count
-  def initialize()
+
+  def initialize
     @pool_cards = []
     @compare_cards = []
     @count = 1
@@ -9,15 +13,13 @@ class Game
   def distribute_cards(cards, players)
     num_of_players = players.length
     max_loop_count = cards.card_collection.length - 1
-    for i in 0..max_loop_count
+    (0..max_loop_count).each do |i|
       players[i % num_of_players].hand << cards.card_collection.delete_at(0)
     end
   end
 
   def match_fixing(cards, players)
-    num_of_players = players.length
-    max_loop_count = cards.card_collection.length - 1
-    for i in 0..max_loop_count
+    cards.card_collection.each do
       if cards.card_collection[0].strength > 5
         players[0].hand << cards.card_collection.delete_at(0)
       else
@@ -28,15 +30,14 @@ class Game
 
   def war(players)
     @count += 1
-    players.each_with_index do | player, index |
+    players.each do |player|
       put_card(player)
     end
 
-    return do_battle(players)
-
+    do_battle(players)
   end
 
-  def sweep_compare_cards()
+  def sweep_compare_cards
     @pool_cards += @compare_cards
     @compare_cards = []
   end
@@ -47,17 +48,15 @@ class Game
   end
 
   def check_do_rematch(players)
-    players.each do | player |
-      if player.hand.length == 0
-        if player.added_hand.length == 0
-          return player, false
-        else
-          player.hand += player.added_hand.shuffle!
-          player.added_hand = []
-        end
+    players.each do |player|
+      if player.hand.empty? && player.added_hand.empty?
+        return [player, false]
+      elsif player.hand.empty?
+        player.hand += player.added_hand.shuffle!
+        player.added_hand = []
       end
     end
-    return '', true
+    ['', true]
   end
 
   private
@@ -74,25 +73,21 @@ class Game
     joker_index = @compare_cards.find_index { |card| card.mark == 'joker' }
 
     # 引き分け、かつスペードのAあり（ジョーカーの有無関係なし）
-    if size_of_max_strength > 1 && max_strength && ace_of_spade_index = @compare_cards.find_index { |card| card.name == 'スペードのA' }
-      # puts '☆'
-      return players[ace_of_spade_index], false
+    ace_of_spade_index = @compare_cards.find_index { |card| card.name == 'スペードのA' }
+    if size_of_max_strength > 1 && max_strength && !ace_of_spade_index.nil?
+
+      [players[ace_of_spade_index], false]
     # スペードのAなし、かつジョーカーあり
     elsif joker_index
-      return players[joker_index], false
+      [players[joker_index], false]
 
     # 引き分けあり（ジョーカーなし、A有無関係なし）
     elsif size_of_max_strength > 1
-      return '', true
+      ['', true]
 
     # 引き分けなし（ジョーカーなし、A有無関係なし）
     else
-      return players[@compare_cards.find_index { |card| card.strength == max_strength }], false
+      [players[@compare_cards.find_index { |card| card.strength == max_strength }], false]
     end
   end
-
-  def add_special_rules()
-
-  end
-
 end
